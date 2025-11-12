@@ -122,14 +122,6 @@ El sistema simula sensores de temperatura que envían datos periódicamente a Ka
 - **Docker Compose** 2.0 o superior
 - **Git** (opcional, para clonar el repositorio)
 
-### Recursos del Sistema
-
-- **RAM**: Mínimo 4GB (recomendado 8GB)
-- **CPU**: Mínimo 2 cores
-- **Disco**: Mínimo 5GB libres
-
----
-
 ## Instalación y Ejecución
 
 ### Opción 1: Docker Compose (Recomendado)
