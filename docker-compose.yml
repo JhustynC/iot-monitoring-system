@@ -1,0 +1,94 @@
+services:
+  kafka:
+    image: confluentinc/cp-kafka:8.0.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - kafka-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=kraft-cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_READONLY=false
+    networks:
+      - kafka-network
+
+  aggregator-service:
+    build: ./aggregator-service
+    container_name: aggregator-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+      sensor-node:
+        condition: service_started
+    restart: unless-stopped
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - TOPIC_NAME=sensor-data
+      - PORT=3000
+      - SENSOR_NODE_RPC=http://sensor-node:5000
+    ports:
+      - "3000:3000"
+    networks:
+      - kafka-network
+
+  sensor-node:
+    build: ./sensor-node
+    container_name: sensor-node
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - TOPIC_NAME=sensor-data
+      - SENSOR_ID=1
+      - RPC_PORT=5000
+    ports:
+      - "5000:5000"
+    networks:
+      - kafka-network
+
+  dashboard:
+    build: ./dashboard
+    container_name: dashboard
+    depends_on:
+      - aggregator-service
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    networks:
+      - kafka-network
+    restart: unless-stopped
+
+networks:
+  kafka-network:
+    driver: bridge
