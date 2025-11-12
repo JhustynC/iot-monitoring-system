@@ -15,8 +15,9 @@ Sistema distribuido de monitoreo IoT que simula sensores de temperatura, procesa
 - [API y Endpoints](#api-y-endpoints)
 - [Flujo de Datos](#flujo-de-datos)
 - [Comunicación RPC](#comunicación-rpc)
+- [Variables de Entorno](#variables-de-entorno)
 - [Solución de Problemas](#solución-de-problemas)
-- [Explicación Académica](#explicación-académica)
+- [Comandos Útiles](#comandos-útiles)
 
 ---
 
@@ -120,15 +121,21 @@ El sistema simula sensores de temperatura que envían datos periódicamente a Ka
 
 - **Docker** 20.10 o superior
 - **Docker Compose** 2.0 o superior
-- **Git** (opcional, para clonar el repositorio)
+
+### Recursos del Sistema
+
+- **RAM**: Mínimo 4GB (recomendado 8GB)
+- **CPU**: Mínimo 2 cores
+- **Disco**: Mínimo 5GB libres
+
+---
 
 ## Instalación y Ejecución
 
 ### Opción 1: Docker Compose (Recomendado)
 
-1. **Clonar el repositorio** (si aplica):
+1. **Navegar al directorio del proyecto**:
 ```bash
-git clone <repository-url>
 cd iot-monitoring-system
 ```
 
@@ -164,6 +171,8 @@ docker-compose down -v
 
 ### Opción 2: Desarrollo Local (Sin Docker)
 
+**Nota**: Requiere tener Kafka corriendo localmente y actualizar las URLs de conexión en los archivos de configuración.
+
 #### Sensor Node (Python)
 
 ```bash
@@ -179,7 +188,7 @@ python sensor_node.py
 ```bash
 cd aggregator-service
 npm install
-npm run dev  # Requiere ts-node o tsx configurado
+npx tsx src/index.ts
 ```
 
 #### Dashboard (React)
@@ -190,8 +199,6 @@ npm install
 npm run dev
 ```
 
-**Nota**: Para desarrollo local, asegúrate de tener Kafka corriendo y actualiza las URLs de conexión en los archivos de configuración.
-
 ---
 
 ## Estructura del Proyecto
@@ -200,26 +207,25 @@ npm run dev
 iot-monitoring-system/
 │
 ├── docker-compose.yml          # Configuración de todos los servicios
-├── README.md                    # Este archivo
+├── README.md                   # Este archivo
 ├── INSTRUCCIONES_DOCKER.md     # Guía detallada de Docker
-├── .gitignore                   # Archivos ignorados por Git
+├── .gitignore                  # Archivos ignorados por Git
 │
-├── sensor-node/                 # Servicio Python - Simulador de sensores
+├── sensor-node/                # Servicio Python - Simulador de sensores
 │   ├── Dockerfile              # Imagen Docker para sensor-node
 │   ├── .dockerignore           # Archivos excluidos del build
 │   ├── sensor_node.py          # Código principal del sensor
-│   ├── requirements.txt        # Dependencias Python
-│   └── README.md               # Documentación del sensor
+│   └── requirements.txt        # Dependencias Python
 │
-├── aggregator-service/          # Servicio Node.js/TypeScript - Agregador
+├── aggregator-service/         # Servicio Node.js/TypeScript - Agregador
 │   ├── Dockerfile              # Imagen Docker para aggregator
 │   ├── .dockerignore           # Archivos excluidos del build
 │   ├── package.json            # Dependencias Node.js
 │   ├── tsconfig.json           # Configuración TypeScript
 │   └── src/
-│       └── index.ts             # Código principal del agregador
+│       └── index.ts            # Código principal del agregador
 │
-└── dashboard/                   # Frontend React - Dashboard
+└── dashboard/                  # Frontend React - Dashboard
     ├── Dockerfile              # Imagen Docker para dashboard
     ├── package.json            # Dependencias React
     ├── vite.config.js          # Configuración Vite
@@ -248,8 +254,6 @@ Una vez que todos los servicios estén corriendo, tendrás acceso a:
 
 ## Características del Dashboard
 
-El dashboard incluye las siguientes funcionalidades:
-
 ### Visualizaciones
 
 1. **Gráfica de Línea en Tiempo Real**
@@ -272,9 +276,9 @@ El dashboard incluye las siguientes funcionalidades:
 4. **Tabla de Datos**
    - Últimos 20 registros recibidos
    - Colores según temperatura:
-     - 🔵 Azul: < 23°C
-     - 🟢 Verde: 23-27°C
-     - 🔴 Rojo: > 27°C
+     - Azul: < 23°C
+     - Verde: 23-27°C
+     - Rojo: > 27°C
    - Información de fecha y hora
 
 ### Funcionalidades
@@ -351,10 +355,9 @@ curl -X POST http://localhost:5000 \
 
 ### 1. Generación de Datos
 
-El `sensor-node` ejecuta 3 threads, cada uno simulando un sensor:
+El `sensor-node` ejecuta 3 threads, cada uno simulando un sensor que genera datos cada 1-3 segundos:
 
 ```python
-# Cada sensor genera datos cada 1-3 segundos
 {
   "sensor_id": "sensor_0",
   "type": "temperature",
@@ -386,12 +389,11 @@ El dashboard:
 - Actualiza gráficas y estadísticas en tiempo real
 - Muestra los últimos datos en una tabla
 
-### 5. Consultas RPC (Opcional)
+### 5. Consultas RPC
 
 Cada 10 segundos, el aggregator hace una llamada RPC al sensor-node para obtener estadísticas:
 
 ```typescript
-// Consulta estado del sensor
 const response = await axios.post('http://sensor-node:5000', {
   jsonrpc: "2.0",
   method: "get_status",
@@ -441,6 +443,34 @@ def get_status():
 
 ---
 
+## Variables de Entorno
+
+### Sensor Node
+
+| Variable | Valor por Defecto | Descripción |
+|----------|-------------------|-------------|
+| `KAFKA_BROKER` | `localhost:9092` | Dirección del broker Kafka |
+| `TOPIC_NAME` | `sensor-data` | Nombre del topic |
+| `RPC_PORT` | `5000` | Puerto del servidor RPC |
+| `RPC_HOST` | `0.0.0.0` | Host del servidor RPC |
+
+### Aggregator Service
+
+| Variable | Valor por Defecto | Descripción |
+|----------|-------------------|-------------|
+| `KAFKA_BROKER` | `localhost:9092` | Dirección del broker Kafka |
+| `TOPIC_NAME` | `sensor-data` | Nombre del topic |
+| `PORT` | `3000` | Puerto del servidor HTTP |
+| `SENSOR_NODE_RPC` | `http://sensor-node:5000` | URL del servidor RPC |
+
+### Dashboard
+
+| Variable | Valor por Defecto | Descripción |
+|----------|-------------------|-------------|
+| `VITE_API_URL` | `http://localhost:3000` | URL del aggregator service |
+
+---
+
 ## Solución de Problemas
 
 ### Los servicios se apagan inmediatamente
@@ -448,7 +478,7 @@ def get_status():
 **Causa**: Kafka no está listo cuando los servicios intentan conectarse.
 
 **Solución**: 
-- Los servicios tienen reintentos automáticos
+- Los servicios tienen reintentos automáticos configurados
 - Verifica que Kafka esté saludable: `docker-compose ps`
 - Revisa los logs: `docker-compose logs kafka`
 
@@ -480,7 +510,6 @@ docker-compose up --build dashboard
 
 **Solución**:
 ```bash
-# Ver qué proceso usa el puerto (ejemplo puerto 3000)
 # Windows
 netstat -ano | findstr :3000
 
@@ -496,44 +525,6 @@ lsof -i :3000
 1. Kafka está corriendo: `docker-compose ps kafka`
 2. El topic `sensor-data` existe
 3. Los mensajes están llegando (ver logs del sensor-node)
-
----
-
-### Patrones de Diseño Utilizados
-
-1. **Pub/Sub (Publicador/Suscriptor)**: Kafka implementa este patrón
-2. **Producer-Consumer**: Sensores producen, agregador consume
-3. **RPC (Remote Procedure Call)**: Comunicación directa entre servicios
-4. **Observer**: Dashboard observa cambios vía WebSocket
-5. **Singleton**: Instancias únicas de servicios en contenedores
-
----
-
-## Variables de Entorno
-
-### Sensor Node
-
-| Variable | Valor por Defecto | Descripción |
-|----------|-------------------|-------------|
-| `KAFKA_BROKER` | `localhost:9092` | Dirección del broker Kafka |
-| `TOPIC_NAME` | `sensor-data` | Nombre del topic |
-| `RPC_PORT` | `5000` | Puerto del servidor RPC |
-| `RPC_HOST` | `0.0.0.0` | Host del servidor RPC |
-
-### Aggregator Service
-
-| Variable | Valor por Defecto | Descripción |
-|----------|-------------------|-------------|
-| `KAFKA_BROKER` | `localhost:9092` | Dirección del broker Kafka |
-| `TOPIC_NAME` | `sensor-data` | Nombre del topic |
-| `PORT` | `3000` | Puerto del servidor HTTP |
-| `SENSOR_NODE_RPC` | `http://sensor-node:5000` | URL del servidor RPC |
-
-### Dashboard
-
-| Variable | Valor por Defecto | Descripción |
-|----------|-------------------|-------------|
-| `VITE_API_URL` | `http://localhost:3000` | URL del aggregator service |
 
 ---
 
@@ -584,3 +575,32 @@ npm install
 # Ejecutar en modo desarrollo
 npm run dev
 ```
+
+---
+
+## Conceptos de Sistemas Distribuidos Demostrados
+
+Este proyecto demuestra los siguientes conceptos:
+
+| Concepto | Implementación |
+|----------|----------------|
+| **Distribución** | Servicios en distintos procesos/contenedores usando Docker Compose |
+| **Concurrencia** | Threads en Python simulando múltiples sensores |
+| **Comunicación RPC** | JSON-RPC entre Node.js ↔ Python |
+| **Comunicación asíncrona** | Kafka como middleware pub/sub |
+| **Tiempo real** | WebSocket (Socket.IO) para actualización en vivo |
+| **Multi-lenguaje** | Integración entre Python y TypeScript |
+| **Desacoplamiento** | Kafka permite productores y consumidores independientes |
+| **Tolerancia a fallos** | Reintentos automáticos y healthchecks de Docker |
+| **Observabilidad** | Logs estructurados y dashboard de monitoreo |
+
+### Patrones de Diseño Utilizados
+
+1. **Pub/Sub (Publicador/Suscriptor)**: Kafka implementa este patrón
+2. **Producer-Consumer**: Sensores producen, agregador consume
+3. **RPC (Remote Procedure Call)**: Comunicación directa entre servicios
+4. **Observer**: Dashboard observa cambios vía WebSocket
+
+---
+
+**Última actualización**: Noviembre 2025
