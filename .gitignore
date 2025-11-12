@@ -54,6 +54,6 @@ coverage/
 pytest_cache/
 
 # ─── React Dashboard (si lo agregas después) ──────────────────────────
-frontend/node_modules/
-frontend/build/
-frontend/.env
+dashboard/node_modules/
+dashboard/build/
+dashboard/.env

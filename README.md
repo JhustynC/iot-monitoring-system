@@ -507,23 +507,6 @@ lsof -i :3000
 
 ---
 
-## Explicación Académica
-
-Este proyecto demuestra los siguientes conceptos de sistemas distribuidos:
-
-| Concepto | Dónde se aplica | Implementación |
-|----------|-----------------|----------------|
-| **Distribución** | Sensores Python y servidor Node en distintos procesos/contenedores | Docker Compose con servicios separados |
-| **Concurrencia** | Threads en Python simulando múltiples sensores | `threading.Thread` en `sensor_node.py` |
-| **Comunicación RPC** | JSON-RPC entre Node.js ↔ Python | `jsonrpcserver` (Python) y `axios` (TypeScript) |
-| **Comunicación asíncrona** | Kafka entre productores y consumidor | Topic `sensor-data` con productor/consumidor |
-| **Tiempo real** | WebSocket hacia React | Socket.IO para actualización en vivo |
-| **Multi-lenguaje** | Python + TypeScript | Integración entre servicios heterogéneos |
-| **Desacoplamiento** | Kafka como middleware | Productores y consumidores independientes |
-| **Escalabilidad** | Múltiples sensores, un consumidor | Arquitectura pub/sub permite escalar productores |
-| **Tolerancia a fallos** | Reintentos y healthchecks | Docker healthchecks y lógica de reintento |
-| **Observabilidad** | Logs y métricas | Logs estructurados y dashboard de monitoreo |
-
 ### Patrones de Diseño Utilizados
 
 1. **Pub/Sub (Publicador/Suscriptor)**: Kafka implementa este patrón
@@ -609,22 +592,3 @@ npm install
 # Ejecutar en modo desarrollo
 npm run dev
 ```
-
----
-
-## Próximas Mejoras
-
-- [ ] Persistencia de datos (base de datos)
-- [ ] Autenticación y autorización
-- [ ] Alertas y notificaciones
-- [ ] Histórico de datos con filtros de fecha
-- [ ] Exportación de datos (CSV, JSON)
-- [ ] Múltiples tipos de sensores (humedad, presión, etc.)
-- [ ] Dashboard con múltiples vistas
-- [ ] Métricas de rendimiento del sistema
-- [ ] Tests automatizados
-- [ ] CI/CD pipeline
-
----
-
-**Última actualización**: Noviembre 2025
