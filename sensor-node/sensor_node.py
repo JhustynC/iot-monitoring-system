@@ -91,7 +91,7 @@ class RPCRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
     
     def log_message(self, format, *args):
-        pass  # Suprimir logs del servidor HTTP
+        print(f"RPC {self.address_string()} - - [{self.log_date_time_string()}] {format % args}")
 
 # Iniciar hilos
 for i in range(3):
