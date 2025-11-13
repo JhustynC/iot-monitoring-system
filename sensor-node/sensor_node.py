@@ -77,7 +77,7 @@ class RPCRequestHandler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)
             
-            from jsonrpcserver import dispatch
+            from jsonrpcserver import dispatch #? Se importa aquí porque solo se usa en este método	
             
             response = dispatch(post_data.decode())
             
