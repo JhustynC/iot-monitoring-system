@@ -38,44 +38,60 @@ El sistema simula sensores de temperatura que envían datos periódicamente a Ka
 ## Arquitectura
 
 ```
-              ┌───────────────────────────────┐
-              │      NODOS SENSOR (Python)    │
-              │ ───────────────────────────── │
-              │  - Usa hilos (threading)      │
-              │  - Simula 3 sensores          │
-              │  - Envía datos a KAFKA        │
-              │  - Expone JSON-RPC Server     │
-              │    en puerto 5000             │
-              └─────────────┬─────────────────┘
-                            │
-                 (Mensajes JSON de sensores)
-                 Topic: sensor-data
-                            │
-                     ┌──────▼──────┐
-                     │   KAFKA     │
-                     │   Broker    │
-                     │  (KRaft)    │
-                     └──────┬──────┘
-                            │
-               ┌────────────▼────────────────┐
-               │   AGGREGATOR (Node + TS)    │
-               │ ─────────────────────────   │
-               │ - Consume datos de Kafka    │
-               │ - Hace llamadas RPC a nodos │
-               │ - Procesa y agrega datos    │
-               │ - Expone API REST (3000)    │
-               │ - WebSocket (Socket.IO)     │
-               └─────────────┬───────────────┘
-                             │
-                  ┌──────────▼──────────┐
-                  │   DASHBOARD (React) │
-                  │ ─────────────────── │
-                  │ - Visualización     │
-                  │ - Gráficas tiempo   │
-                  │   real              │
-                  │ - Estadísticas      │
-                  │ - Filtros por sensor│
-                  └─────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                    SENSOR NODE (Python)                   │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                 │
+│  │ Thread 1 │  │ Thread 2 │  │ Thread 3 │                 │
+│  │sensor_0  │  │sensor_1  │  │sensor_2  │                 │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘                 │
+│       │             │             │                       │
+│       └─────────────┴─────────────┘                       │
+│                    │                                      │
+│              (Publica mensajes)                           │
+│                    │                                      │
+│         ┌────────▼──────────┐                             │
+│         │  JSON-RPC Server  │                             │
+│         │   (Puerto 5000)   │                             │
+│         └───────────────────┘                             │
+└────────────────────┬──────────────────────────────────────┘
+                     │
+                     │ (Mensajes JSON)
+                     │ Topic: "sensor-data"
+                     │
+         ┌───────────▼───────────┐
+         │   KAFKA BROKER        │
+         │  (Puerto 9092/9094)   │
+         │  ┌─────────────────┐  │
+         │  │  Topic:         │  │
+         │  │  sensor-data    │  │
+         │  └─────────────────┘  │
+         └───────────┬───────────┘
+                     │
+                     │ (Consume mensajes)
+                     │
+         ┌───────────▼───────────┐
+         │ AGGREGATOR SERVICE    │
+         │   (Node.js/TypeScript)│
+         │  ┌──────────────────┐ │
+         │  │ Kafka Consumer   │ │
+         │  │ Socket.IO Server │ │
+         │  │ Express API      │ │
+         │  └──────────────────┘ │
+         │   (Puerto 3000)       │
+         └───────────┬───────────┘
+                     │
+                     │ (WebSocket)
+                     │ Eventos: "sensor-update"
+                     │
+         ┌───────────▼────────────┐
+         │   DASHBOARD (React)    │
+         │   ┌─────────────────┐  │
+         │   │ Socket.IO Client│  │
+         │   │ Recharts        │  │
+         │   │ React Hooks     │  │
+         │   └─────────────────┘  │
+         │   (Puerto 5173)        │
+         └────────────────────────┘
 ```
 
 ---
