@@ -4,6 +4,8 @@ import { Server } from "socket.io";
 import { Kafka } from "kafkajs";
 import axios from "axios";
 import cors from "cors";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 app.use(cors());
@@ -22,7 +24,7 @@ const consumer = kafka.consumer({ groupId: "aggregator-group" });
 async function consumeKafka() {
   const maxRetries = 10;
   let retries = 0;
-  
+
   while (retries < maxRetries) {
     try {
       await consumer.connect();
@@ -34,6 +36,19 @@ async function consumeKafka() {
           try {
             const data = JSON.parse(message.value!.toString());
             console.log("Dato recibido:", data);
+
+            // Lógica para el Sidecar: Escribir en el archivo compartido
+            const logDir = "/app/logs";
+            const logFile = path.join(logDir, "audit.log");
+            const logEntry = `[${new Date().toISOString()}] AUDIT: Sensor ${data.sensor_id} envió valor ${data.value}\n`;
+
+            try {
+              if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+              fs.appendFileSync(logFile, logEntry);
+            } catch (fsErr) {
+              console.error("Error escribiendo en el log para el sidecar:", fsErr);
+            }
+
             io.emit("sensor-update", data);
           } catch (err) {
             console.error("Error procesando mensaje:", err);

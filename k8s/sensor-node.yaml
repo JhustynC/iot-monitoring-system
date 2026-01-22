@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor-node
+  namespace: iot-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sensor-node
+  template:
+    metadata:
+      labels:
+        app: sensor-node
+    spec:
+      containers:
+      - name: sensor-node
+        image: sensor-node:local
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        env:
+        - name: KAFKA_BROKER
+          valueFrom:
+            configMapKeyRef:
+              name: iot-config
+              key: KAFKA_BROKER
+        - name: TOPIC_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: iot-config
+              key: TOPIC_NAME
+        - name: RPC_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: iot-config
+              key: RPC_PORT
+        - name: RPC_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: iot-config
+              key: RPC_HOST
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sensor-node-service
+  namespace: iot-monitoring
+spec:
+  selector:
+    app: sensor-node
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+  type: ClusterIP

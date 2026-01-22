@@ -1,0 +1,9 @@
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - kafka.yaml
+  - sensor-node.yaml
+  - aggregator-service.yaml
+  - dashboard.yaml
+  - hpa.yaml

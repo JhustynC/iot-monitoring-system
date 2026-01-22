@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aggregator-service
+  namespace: iot-monitoring
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aggregator-service
+  template:
+    metadata:
+      labels:
+        app: aggregator-service
+    spec:
+      containers:
+      - name: aggregator-service
+        image: aggregator-service:local
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        env:
+        - name: KAFKA_BROKER
+          valueFrom:
+            configMapKeyRef:
+              name: iot-config
+              key: KAFKA_BROKER
+        - name: TOPIC_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: iot-config
+              key: TOPIC_NAME
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: iot-config
+              key: AGGREGATOR_PORT
+        - name: SENSOR_NODE_RPC
+          valueFrom:
+            configMapKeyRef:
+              name: iot-config
+              key: SENSOR_NODE_RPC
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /app/logs
+      # Contenedor Sidecar: Auditor de Logs
+      - name: sidecar-auditor
+        image: busybox:1.28
+        command: ["/bin/sh", "-c", "while true; do if [ -f /app/logs/audit.log ]; then tail -f /app/logs/audit.log; fi; sleep 10; done"]
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /app/logs
+      volumes:
+      - name: shared-logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aggregator-service
+  namespace: iot-monitoring
+spec:
+  selector:
+    app: aggregator-service
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+  type: LoadBalancer
