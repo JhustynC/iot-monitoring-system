@@ -40,7 +40,7 @@ async function consumeKafka() {
           }
         },
       });
-      break; // Si llegamos aquí, todo está bien
+      break; //! Si llegamos aquí, todo está bien
     } catch (err) {
       retries++;
       console.error(`Error conectando a Kafka (intento ${retries}/${maxRetries}):`, err);
