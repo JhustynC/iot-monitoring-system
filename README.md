@@ -940,7 +940,11 @@ kubectl run load-gen-1 --image=busybox:1.28 -n iot-monitoring -- /bin/sh -c "whi
 kubectl run load-gen-2 --image=busybox:1.28 -n iot-monitoring -- /bin/sh -c "while true; do wget -q -O- http://aggregator-service:3000; done"
 
 # Generador 3
-kubectl run load-gen-3 --image=busybox:1.28 -n iot-monitoring -- /bin/sh -c "while true; do wget -q -O- http://aggregator-service:3000; done"
+kubectl run load-gen-3 --image=busybox:1.28 -n iot-monitoring -- /bin/sh -c "while true; do wget -q -O- http://aggregator-service:3000;
+done"
+
+# Ver los logs de un load-gen
+kubectl logs load-gen-2 -n iot-monitoring
 ```
 
 ### 9.3 Resultados Esperados
